@@ -1,1702 +1,1833 @@
-/*! UIkit 3.15.10 | https://www.getuikit.com | (c) 2014 - 2022 YOOtheme | MIT License */
+/*! UIkit 3.0.3 | http://www.getuikit.com | (c) 2014 - 2018 YOOtheme | MIT License */
 
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('uikit-util')) :
     typeof define === 'function' && define.amd ? define('uikitlightbox_panel', ['uikit-util'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.UIkitLightbox_panel = factory(global.UIkit.util));
-})(this, (function (uikitUtil) { 'use strict';
+    (global = global || self, global.UIkitLightbox_panel = factory(global.UIkit.util));
+}(this, function (uikitUtil) { 'use strict';
 
-    var Animations$1 = {
-      slide: {
-        show(dir) {
-          return [{ transform: translate(dir * -100) }, { transform: translate() }];
-        },
+    var Animations = {
 
-        percent(current) {
-          return translated(current);
-        },
+        slide: {
 
-        translate(percent, dir) {
-          return [
-          { transform: translate(dir * -100 * percent) },
-          { transform: translate(dir * 100 * (1 - percent)) }];
+            show: function(dir) {
+                return [
+                    {transform: translate(dir * -100)},
+                    {transform: translate()}
+                ];
+            },
 
-        } } };
+            percent: function(current) {
+                return translated(current);
+            },
 
+            translate: function(percent, dir) {
+                return [
+                    {transform: translate(dir * -100 * percent)},
+                    {transform: translate(dir * 100 * (1 - percent))}
+                ];
+            }
 
+        }
+
+    };
 
     function translated(el) {
-      return Math.abs(uikitUtil.css(el, 'transform').split(',')[4] / el.offsetWidth) || 0;
+        return Math.abs(uikitUtil.css(el, 'transform').split(',')[4] / el.offsetWidth) || 0;
     }
 
-    function translate(value, unit) {if (value === void 0) {value = 0;}if (unit === void 0) {unit = '%';}
-      value += value ? unit : '';
-      return "translate3d(" + value + ", 0, 0)";
+    function translate(value, unit) {
+        if ( value === void 0 ) value = 0;
+        if ( unit === void 0 ) unit = '%';
+
+        return ("translateX(" + value + (value ? unit : '') + ")"); // currently not translate3d to support IE, translate3d within translate3d does not work while transitioning
     }
 
     function scale3d(value) {
-      return "scale3d(" + value + ", " + value + ", 1)";
+        return ("scale3d(" + value + ", " + value + ", 1)");
     }
 
-    var Animations = {
-      ...Animations$1,
-      fade: {
-        show() {
-          return [{ opacity: 0 }, { opacity: 1 }];
+    var Animations$1 = uikitUtil.assign({}, Animations, {
+
+        fade: {
+
+            show: function() {
+                return [
+                    {opacity: 0},
+                    {opacity: 1}
+                ];
+            },
+
+            percent: function(current) {
+                return 1 - uikitUtil.css(current, 'opacity');
+            },
+
+            translate: function(percent) {
+                return [
+                    {opacity: 1 - percent},
+                    {opacity: percent}
+                ];
+            }
+
         },
 
-        percent(current) {
-          return 1 - uikitUtil.css(current, 'opacity');
-        },
+        scale: {
 
-        translate(percent) {
-          return [{ opacity: 1 - percent }, { opacity: percent }];
-        } },
+            show: function() {
+                return [
+                    {opacity: 0, transform: scale3d(1 - .2)},
+                    {opacity: 1, transform: scale3d(1)}
+                ];
+            },
 
+            percent: function(current) {
+                return 1 - uikitUtil.css(current, 'opacity');
+            },
 
-      scale: {
-        show() {
-          return [
-          { opacity: 0, transform: scale3d(1 - 0.2) },
-          { opacity: 1, transform: scale3d(1) }];
+            translate: function(percent) {
+                return [
+                    {opacity: 1 - percent, transform: scale3d(1 - .2 * percent)},
+                    {opacity: percent, transform: scale3d(1 - .2 + .2 * percent)}
+                ];
+            }
 
-        },
+        }
 
-        percent(current) {
-          return 1 - uikitUtil.css(current, 'opacity');
-        },
-
-        translate(percent) {
-          return [
-          { opacity: 1 - percent, transform: scale3d(1 - 0.2 * percent) },
-          { opacity: percent, transform: scale3d(1 - 0.2 + 0.2 * percent) }];
-
-        } } };
+    });
 
     var Container = {
-      props: {
-        container: Boolean },
 
+        props: {
+            container: Boolean
+        },
 
-      data: {
-        container: true },
+        data: {
+            container: true
+        },
 
+        computed: {
 
-      computed: {
-        container(_ref) {let { container } = _ref;
-          return container === true && this.$container || container && uikitUtil.$(container);
-        } } };
+            container: function(ref) {
+                var container = ref.container;
+
+                return container === true && this.$container || container && uikitUtil.$(container);
+            }
+
+        }
+
+    };
 
     var Class = {
-      connected() {
-        uikitUtil.addClass(this.$el, this.$options.id);
-      } };
+
+        connected: function() {
+            !uikitUtil.hasClass(this.$el, this.$name) && uikitUtil.addClass(this.$el, this.$name);
+        }
+
+    };
 
     var Togglable = {
-      props: {
-        cls: Boolean,
-        animation: 'list',
-        duration: Number,
-        velocity: Number,
-        origin: String,
-        transition: String },
 
-
-      data: {
-        cls: false,
-        animation: [false],
-        duration: 200,
-        velocity: 0.2,
-        origin: false,
-        transition: 'ease',
-        clsEnter: 'uk-togglabe-enter',
-        clsLeave: 'uk-togglabe-leave' },
-
-
-      computed: {
-        hasAnimation(_ref) {let { animation } = _ref;
-          return !!animation[0];
+        props: {
+            cls: Boolean,
+            animation: 'list',
+            duration: Number,
+            origin: String,
+            transition: String,
+            queued: Boolean
         },
 
-        hasTransition(_ref2) {let { animation } = _ref2;
-          return ['slide', 'reveal'].some((transition) => uikitUtil.startsWith(animation[0], transition));
-        } },
+        data: {
+            cls: false,
+            animation: [false],
+            duration: 200,
+            origin: false,
+            transition: 'linear',
+            queued: false,
 
+            initProps: {
+                overflow: '',
+                height: '',
+                paddingTop: '',
+                paddingBottom: '',
+                marginTop: '',
+                marginBottom: ''
+            },
 
-      methods: {
-        toggleElement(targets, toggle, animate) {
-          return new Promise((resolve) =>
-          Promise.all(
-          uikitUtil.toNodes(targets).map((el) => {
-            const show = uikitUtil.isBoolean(toggle) ? toggle : !this.isToggled(el);
-
-            if (!uikitUtil.trigger(el, "before" + (show ? 'show' : 'hide'), [this])) {
-              return Promise.reject();
+            hideProps: {
+                overflow: 'hidden',
+                height: 0,
+                paddingTop: 0,
+                paddingBottom: 0,
+                marginTop: 0,
+                marginBottom: 0
             }
 
-            const promise = (
-            uikitUtil.isFunction(animate) ?
-            animate :
-            animate === false || !this.hasAnimation ?
-            toggleInstant :
-            this.hasTransition ?
-            toggleTransition :
-            toggleAnimation)(
-            el, show, this);
+        },
 
-            const cls = show ? this.clsEnter : this.clsLeave;
+        computed: {
 
-            uikitUtil.addClass(el, cls);
+            hasAnimation: function(ref) {
+                var animation = ref.animation;
 
-            uikitUtil.trigger(el, show ? 'show' : 'hide', [this]);
+                return !!animation[0];
+            },
 
-            const done = () => {
-              uikitUtil.removeClass(el, cls);
-              uikitUtil.trigger(el, show ? 'shown' : 'hidden', [this]);
-            };
+            hasTransition: function(ref) {
+                var animation = ref.animation;
 
-            return promise ?
-            promise.then(done, () => {
-              uikitUtil.removeClass(el, cls);
-              return Promise.reject();
-            }) :
-            done();
-          })).
-          then(resolve, uikitUtil.noop));
+                return this.hasAnimation && animation[0] === true;
+            }
 
         },
 
-        isToggled(el) {if (el === void 0) {el = this.$el;}
-          [el] = uikitUtil.toNodes(el);
-          return uikitUtil.hasClass(el, this.clsEnter) ?
-          true :
-          uikitUtil.hasClass(el, this.clsLeave) ?
-          false :
-          this.cls ?
-          uikitUtil.hasClass(el, this.cls.split(' ')[0]) :
-          uikitUtil.isVisible(el);
-        },
+        methods: {
 
-        _toggle(el, toggled) {
-          if (!el) {
-            return;
-          }
+            toggleElement: function(targets, show, animate) {
+                var this$1 = this;
 
-          toggled = Boolean(toggled);
+                return new uikitUtil.Promise(function (resolve) {
 
-          let changed;
-          if (this.cls) {
-            changed = uikitUtil.includes(this.cls, ' ') || toggled !== uikitUtil.hasClass(el, this.cls);
-            changed && uikitUtil.toggleClass(el, this.cls, uikitUtil.includes(this.cls, ' ') ? undefined : toggled);
-          } else {
-            changed = toggled === el.hidden;
-            changed && (el.hidden = !toggled);
-          }
+                    targets = uikitUtil.toNodes(targets);
 
-          uikitUtil.$$('[autofocus]', el).some((el) => uikitUtil.isVisible(el) ? el.focus() || true : el.blur());
+                    var all = function (targets) { return uikitUtil.Promise.all(targets.map(function (el) { return this$1._toggleElement(el, show, animate); })); };
+                    var toggled = targets.filter(function (el) { return this$1.isToggled(el); });
+                    var untoggled = targets.filter(function (el) { return !uikitUtil.includes(toggled, el); });
 
-          if (changed) {
-            uikitUtil.trigger(el, 'toggled', [toggled, this]);
-          }
-        } } };
+                    var p;
 
+                    if (!this$1.queued || !uikitUtil.isUndefined(animate) || !uikitUtil.isUndefined(show) || !this$1.hasAnimation || targets.length < 2) {
 
+                        p = all(untoggled.concat(toggled));
 
-    function toggleInstant(el, show, _ref3) {let { _toggle } = _ref3;
-      uikitUtil.Animation.cancel(el);
-      uikitUtil.Transition.cancel(el);
-      return _toggle(el, show);
-    }
+                    } else {
 
-    async function toggleTransition(
-    el,
-    show, _ref4)
+                        var body = document.body;
+                        var scroll = body.scrollTop;
+                        var el = toggled[0];
+                        var inProgress = uikitUtil.Animation.inProgress(el) && uikitUtil.hasClass(el, 'uk-animation-leave')
+                                || uikitUtil.Transition.inProgress(el) && el.style.height === '0px';
 
-    {var _animation$;let { animation, duration, velocity, transition, _toggle } = _ref4;
-      const [mode = 'reveal', startProp = 'top'] = ((_animation$ = animation[0]) == null ? void 0 : _animation$.split('-')) || [];
+                        p = all(toggled);
 
-      const dirs = [
-      ['left', 'right'],
-      ['top', 'bottom']];
+                        if (!inProgress) {
+                            p = p.then(function () {
+                                var p = all(untoggled);
+                                body.scrollTop = scroll;
+                                return p;
+                            });
+                        }
 
-      const dir = dirs[uikitUtil.includes(dirs[0], startProp) ? 0 : 1];
-      const end = dir[1] === startProp;
-      const props = ['width', 'height'];
-      const dimProp = props[dirs.indexOf(dir)];
-      const marginProp = "margin-" + dir[0];
-      const marginStartProp = "margin-" + startProp;
+                    }
 
-      let currentDim = uikitUtil.dimensions(el)[dimProp];
+                    p.then(resolve, uikitUtil.noop);
 
-      const inProgress = uikitUtil.Transition.inProgress(el);
-      await uikitUtil.Transition.cancel(el);
+                });
+            },
 
-      if (show) {
-        _toggle(el, true);
-      }
+            toggleNow: function(targets, show) {
+                var this$1 = this;
 
-      const prevProps = Object.fromEntries(
-      [
-      'padding',
-      'border',
-      'width',
-      'height',
-      'minWidth',
-      'minHeight',
-      'overflowY',
-      'overflowX',
-      marginProp,
-      marginStartProp].
-      map((key) => [key, el.style[key]]));
+                return new uikitUtil.Promise(function (resolve) { return uikitUtil.Promise.all(uikitUtil.toNodes(targets).map(function (el) { return this$1._toggleElement(el, show, false); })).then(resolve, uikitUtil.noop); });
+            },
+
+            isToggled: function(el) {
+                var nodes = uikitUtil.toNodes(el || this.$el);
+                return this.cls
+                    ? uikitUtil.hasClass(nodes, this.cls.split(' ')[0])
+                    : !uikitUtil.hasAttr(nodes, 'hidden');
+            },
+
+            updateAria: function(el) {
+                if (this.cls === false) {
+                    uikitUtil.attr(el, 'aria-hidden', !this.isToggled(el));
+                }
+            },
+
+            _toggleElement: function(el, show, animate) {
+                var this$1 = this;
 
 
-      const dim = uikitUtil.dimensions(el);
-      const currentMargin = uikitUtil.toFloat(uikitUtil.css(el, marginProp));
-      const marginStart = uikitUtil.toFloat(uikitUtil.css(el, marginStartProp));
-      const endDim = dim[dimProp] + marginStart;
+                show = uikitUtil.isBoolean(show)
+                    ? show
+                    : uikitUtil.Animation.inProgress(el)
+                        ? uikitUtil.hasClass(el, 'uk-animation-leave')
+                        : uikitUtil.Transition.inProgress(el)
+                            ? el.style.height === '0px'
+                            : !this.isToggled(el);
 
-      if (!inProgress && !show) {
-        currentDim += marginStart;
-      }
+                if (!uikitUtil.trigger(el, ("before" + (show ? 'show' : 'hide')), [this])) {
+                    return uikitUtil.Promise.reject();
+                }
 
-      const [wrapper] = uikitUtil.wrapInner(el, '<div>');
-      uikitUtil.css(wrapper, {
-        boxSizing: 'border-box',
-        height: dim.height,
-        width: dim.width,
-        ...uikitUtil.css(el, [
-        'overflow',
-        'padding',
-        'borderTop',
-        'borderRight',
-        'borderBottom',
-        'borderLeft',
-        'borderImage',
-        marginStartProp]) });
+                var promise = (
+                    uikitUtil.isFunction(animate)
+                        ? animate
+                        : animate === false || !this.hasAnimation
+                            ? this._toggle
+                            : this.hasTransition
+                                ? toggleHeight(this)
+                                : toggleAnimation(this)
+                )(el, show);
 
+                uikitUtil.trigger(el, show ? 'show' : 'hide', [this]);
 
+                var final = function () {
+                    uikitUtil.trigger(el, show ? 'shown' : 'hidden', [this$1]);
+                    this$1.$update(el);
+                };
 
-      uikitUtil.css(el, {
-        padding: 0,
-        border: 0,
-        minWidth: 0,
-        minHeight: 0,
-        [marginStartProp]: 0,
-        width: dim.width,
-        height: dim.height,
-        overflow: 'hidden',
-        [dimProp]: currentDim });
+                return promise ? promise.then(final) : uikitUtil.Promise.resolve(final());
+            },
 
+            _toggle: function(el, toggled) {
 
-      const percent = currentDim / endDim;
-      duration = (velocity * endDim + duration) * (show ? 1 - percent : percent);
-      const endProps = { [dimProp]: show ? endDim : 0 };
+                if (!el) {
+                    return;
+                }
 
-      if (end) {
-        uikitUtil.css(el, marginProp, endDim - currentDim + currentMargin);
-        endProps[marginProp] = show ? currentMargin : endDim + currentMargin;
-      }
+                toggled = Boolean(toggled);
 
-      if (!end ^ mode === 'reveal') {
-        uikitUtil.css(wrapper, marginProp, -endDim + currentDim);
-        uikitUtil.Transition.start(wrapper, { [marginProp]: show ? 0 : -endDim }, duration, transition);
-      }
+                var changed;
+                if (this.cls) {
+                    changed = uikitUtil.includes(this.cls, ' ') || toggled !== uikitUtil.hasClass(el, this.cls);
+                    changed && uikitUtil.toggleClass(el, this.cls, uikitUtil.includes(this.cls, ' ') ? undefined : toggled);
+                } else {
+                    changed = toggled === uikitUtil.hasAttr(el, 'hidden');
+                    changed && uikitUtil.attr(el, 'hidden', !toggled ? '' : null);
+                }
 
-      try {
-        await uikitUtil.Transition.start(el, endProps, duration, transition);
-      } finally {
-        uikitUtil.css(el, prevProps);
-        uikitUtil.unwrap(wrapper.firstChild);
+                uikitUtil.$$('[autofocus]', el).some(function (el) { return uikitUtil.isVisible(el) ? el.focus() || true : el.blur(); });
 
-        if (!show) {
-          _toggle(el, false);
+                this.updateAria(el);
+                changed && this.$update(el);
+            }
+
         }
-      }
+
+    };
+
+    function toggleHeight(ref) {
+        var isToggled = ref.isToggled;
+        var duration = ref.duration;
+        var initProps = ref.initProps;
+        var hideProps = ref.hideProps;
+        var transition = ref.transition;
+        var _toggle = ref._toggle;
+
+        return function (el, show) {
+
+            var inProgress = uikitUtil.Transition.inProgress(el);
+            var inner = el.hasChildNodes ? uikitUtil.toFloat(uikitUtil.css(el.firstElementChild, 'marginTop')) + uikitUtil.toFloat(uikitUtil.css(el.lastElementChild, 'marginBottom')) : 0;
+            var currentHeight = uikitUtil.isVisible(el) ? uikitUtil.height(el) + (inProgress ? 0 : inner) : 0;
+
+            uikitUtil.Transition.cancel(el);
+
+            if (!isToggled(el)) {
+                _toggle(el, true);
+            }
+
+            uikitUtil.height(el, '');
+
+            // Update child components first
+            uikitUtil.fastdom.flush();
+
+            var endHeight = uikitUtil.height(el) + (inProgress ? 0 : inner);
+            uikitUtil.height(el, currentHeight);
+
+            return (show
+                    ? uikitUtil.Transition.start(el, uikitUtil.assign({}, initProps, {overflow: 'hidden', height: endHeight}), Math.round(duration * (1 - currentHeight / endHeight)), transition)
+                    : uikitUtil.Transition.start(el, hideProps, Math.round(duration * (currentHeight / endHeight)), transition).then(function () { return _toggle(el, false); })
+            ).then(function () { return uikitUtil.css(el, initProps); });
+
+        };
     }
 
-    function toggleAnimation(el, show, cmp) {
-      uikitUtil.Animation.cancel(el);
+    function toggleAnimation(ref) {
+        var animation = ref.animation;
+        var duration = ref.duration;
+        var origin = ref.origin;
+        var _toggle = ref._toggle;
 
-      const { animation, duration, _toggle } = cmp;
+        return function (el, show) {
 
-      if (show) {
-        _toggle(el, true);
-        return uikitUtil.Animation.in(el, animation[0], duration, cmp.origin);
-      }
+            uikitUtil.Animation.cancel(el);
 
-      return uikitUtil.Animation.out(el, animation[1] || animation[0], duration, cmp.origin).then(() =>
-      _toggle(el, false));
+            if (show) {
+                _toggle(el, true);
+                return uikitUtil.Animation.in(el, animation[0], duration, origin);
+            }
 
+            return uikitUtil.Animation.out(el, animation[1] || animation[0], duration, origin).then(function () { return _toggle(el, false); });
+        };
     }
 
-    const active = [];
+    var active;
 
     var Modal = {
-      mixins: [Class, Container, Togglable],
 
-      props: {
-        selPanel: String,
-        selClose: String,
-        escClose: Boolean,
-        bgClose: Boolean,
-        stack: Boolean },
+        mixins: [Class, Container, Togglable],
 
-
-      data: {
-        cls: 'uk-open',
-        escClose: true,
-        bgClose: true,
-        overlay: true,
-        stack: false },
-
-
-      computed: {
-        panel(_ref, $el) {let { selPanel } = _ref;
-          return uikitUtil.$(selPanel, $el);
+        props: {
+            selPanel: String,
+            selClose: String,
+            escClose: Boolean,
+            bgClose: Boolean,
+            stack: Boolean
         },
 
-        transitionElement() {
-          return this.panel;
+        data: {
+            cls: 'uk-open',
+            escClose: true,
+            bgClose: true,
+            overlay: true,
+            stack: false
         },
 
-        bgClose(_ref2) {let { bgClose } = _ref2;
-          return bgClose && this.panel;
-        } },
+        computed: {
 
+            panel: function(ref, $el) {
+                var selPanel = ref.selPanel;
 
-      beforeDisconnect() {
-        if (uikitUtil.includes(active, this)) {
-          this.toggleElement(this.$el, false, false);
-        }
-      },
+                return uikitUtil.$(selPanel, $el);
+            },
 
-      events: [
-      {
-        name: 'click',
+            transitionElement: function() {
+                return this.panel;
+            },
 
-        delegate() {
-          return this.selClose;
-        },
+            bgClose: function(ref) {
+                var bgClose = ref.bgClose;
 
-        handler(e) {
-          e.preventDefault();
-          this.hide();
-        } },
-
-
-      {
-        name: 'click',
-
-        delegate() {
-          return 'a[href*="#"]';
-        },
-
-        handler(_ref3) {let { current, defaultPrevented } = _ref3;
-          const { hash } = current;
-          if (
-          !defaultPrevented &&
-          hash &&
-          isSameSiteAnchor(current) &&
-          !uikitUtil.within(hash, this.$el) &&
-          uikitUtil.$(hash, document.body))
-          {
-            this.hide();
-          }
-        } },
-
-
-      {
-        name: 'toggle',
-
-        self: true,
-
-        handler(e) {
-          if (e.defaultPrevented) {
-            return;
-          }
-
-          e.preventDefault();
-
-          if (this.isToggled() === uikitUtil.includes(active, this)) {
-            this.toggle();
-          }
-        } },
-
-
-      {
-        name: 'beforeshow',
-
-        self: true,
-
-        handler(e) {
-          if (uikitUtil.includes(active, this)) {
-            return false;
-          }
-
-          if (!this.stack && active.length) {
-            Promise.all(active.map((modal) => modal.hide())).then(this.show);
-            e.preventDefault();
-          } else {
-            active.push(this);
-          }
-        } },
-
-
-      {
-        name: 'show',
-
-        self: true,
-
-        handler() {
-          uikitUtil.once(
-          this.$el,
-          'hide',
-          uikitUtil.on(document, 'focusin', (e) => {
-            if (uikitUtil.last(active) === this && !uikitUtil.within(e.target, this.$el)) {
-              this.$el.focus();
+                return bgClose && this.panel;
             }
-          }));
 
+        },
 
-          if (this.overlay) {
-            uikitUtil.once(this.$el, 'hidden', preventOverscroll(this.$el), { self: true });
-            uikitUtil.once(this.$el, 'hidden', preventBackgroundScroll(), { self: true });
-          }
+        beforeDisconnect: function() {
+            if (this.isToggled()) {
+                this.toggleNow(this.$el, false);
+            }
+        },
 
-          if (this.stack) {
-            uikitUtil.css(this.$el, 'zIndex', uikitUtil.toFloat(uikitUtil.css(this.$el, 'zIndex')) + active.length);
-          }
+        events: [
 
-          uikitUtil.addClass(document.documentElement, this.clsPage);
+            {
 
-          if (this.bgClose) {
-            uikitUtil.once(
-            this.$el,
-            'hide',
-            uikitUtil.on(document, uikitUtil.pointerDown, (_ref4) => {let { target } = _ref4;
-              if (
-              uikitUtil.last(active) !== this ||
-              this.overlay && !uikitUtil.within(target, this.$el) ||
-              uikitUtil.within(target, this.panel))
-              {
-                return;
-              }
+                name: 'click',
 
-              uikitUtil.once(
-              document,
-              uikitUtil.pointerUp + " " + uikitUtil.pointerCancel + " scroll",
-              (_ref5) => {let { defaultPrevented, type, target: newTarget } = _ref5;
-                if (
-                !defaultPrevented &&
-                type === uikitUtil.pointerUp &&
-                target === newTarget)
-                {
-                  this.hide();
+                delegate: function() {
+                    return this.selClose;
+                },
+
+                handler: function(e) {
+                    e.preventDefault();
+                    this.hide();
                 }
-              },
-              true);
 
+            },
+
+            {
+
+                name: 'toggle',
+
+                self: true,
+
+                handler: function(e) {
+
+                    if (e.defaultPrevented) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    this.toggle();
+                }
+
+            },
+
+            {
+                name: 'beforeshow',
+
+                self: true,
+
+                handler: function(e) {
+
+                    var prev = active && active !== this && active;
+
+                    active = this;
+
+                    if (prev) {
+                        if (this.stack) {
+                            this.prev = prev;
+                        } else {
+
+                            active = prev;
+
+                            if (prev.isToggled()) {
+                                prev.hide().then(this.show);
+                            } else {
+                                uikitUtil.once(prev.$el, 'beforeshow hidden', this.show, false, function (ref) {
+                                    var target = ref.target;
+                                    var type = ref.type;
+
+                                    return type === 'hidden' && target === prev.$el;
+                                });
+                            }
+                            e.preventDefault();
+
+                        }
+
+                        return;
+                    }
+
+                    registerEvents();
+
+                }
+
+            },
+
+            {
+
+                name: 'show',
+
+                self: true,
+
+                handler: function() {
+
+                    if (!uikitUtil.hasClass(document.documentElement, this.clsPage)) {
+                        this.scrollbarWidth = uikitUtil.width(window) - uikitUtil.width(document);
+                        uikitUtil.css(document.body, 'overflowY', this.scrollbarWidth && this.overlay ? 'scroll' : '');
+                    }
+
+                    uikitUtil.addClass(document.documentElement, this.clsPage);
+
+                }
+
+            },
+
+            {
+
+                name: 'hide',
+
+                self: true,
+
+                handler: function() {
+                    if (!active || active === this && !this.prev) {
+                        deregisterEvents();
+                    }
+                }
+
+            },
+
+            {
+
+                name: 'hidden',
+
+                self: true,
+
+                handler: function() {
+
+                    var found;
+                    var ref = this;
+                    var prev = ref.prev;
+
+                    active = active && active !== this && active || prev;
+
+                    if (!active) {
+
+                        uikitUtil.css(document.body, 'overflowY', '');
+
+                    } else {
+                        while (prev) {
+
+                            if (prev.clsPage === this.clsPage) {
+                                found = true;
+                                break;
+                            }
+
+                            prev = prev.prev;
+
+                        }
+
+                    }
+
+                    if (!found) {
+                        uikitUtil.removeClass(document.documentElement, this.clsPage);
+                    }
+
+                }
+
+            }
+
+        ],
+
+        methods: {
+
+            toggle: function() {
+                return this.isToggled() ? this.hide() : this.show();
+            },
+
+            show: function() {
+                var this$1 = this;
+
+
+                if (this.isToggled()) {
+                    return uikitUtil.Promise.resolve();
+                }
+
+                if (this.container && this.$el.parentNode !== this.container) {
+                    uikitUtil.append(this.container, this.$el);
+                    return new uikitUtil.Promise(function (resolve) { return requestAnimationFrame(function () { return this$1.show().then(resolve); }
+                        ); }
+                    );
+                }
+
+                return this.toggleElement(this.$el, true, animate(this));
+            },
+
+            hide: function() {
+                return this.isToggled()
+                    ? this.toggleElement(this.$el, false, animate(this))
+                    : uikitUtil.Promise.resolve();
+            },
+
+            getActive: function() {
+                return active;
+            }
+
+        }
+
+    };
+
+    var events;
+
+    function registerEvents() {
+
+        if (events) {
+            return;
+        }
+
+        events = [
+            uikitUtil.on(document, uikitUtil.pointerUp, function (ref) {
+                var target = ref.target;
+                var defaultPrevented = ref.defaultPrevented;
+
+                if (active && active.bgClose && !defaultPrevented && (!active.overlay || uikitUtil.within(target, active.$el)) && !uikitUtil.within(target, active.panel)) {
+                    active.hide();
+                }
             }),
-            { self: true });
-
-          }
-
-          if (this.escClose) {
-            uikitUtil.once(
-            this.$el,
-            'hide',
-            uikitUtil.on(document, 'keydown', (e) => {
-              if (e.keyCode === 27 && uikitUtil.last(active) === this) {
-                this.hide();
-              }
-            }),
-            { self: true });
-
-          }
-        } },
-
-
-      {
-        name: 'shown',
-
-        self: true,
-
-        handler() {
-          if (!uikitUtil.isFocusable(this.$el)) {
-            uikitUtil.attr(this.$el, 'tabindex', '-1');
-          }
-
-          if (!uikitUtil.$(':focus', this.$el)) {
-            this.$el.focus();
-          }
-        } },
-
-
-      {
-        name: 'hidden',
-
-        self: true,
-
-        handler() {
-          if (uikitUtil.includes(active, this)) {
-            active.splice(active.indexOf(this), 1);
-          }
-
-          uikitUtil.css(this.$el, 'zIndex', '');
-
-          if (!active.some((modal) => modal.clsPage === this.clsPage)) {
-            uikitUtil.removeClass(document.documentElement, this.clsPage);
-          }
-        } }],
-
-
-
-      methods: {
-        toggle() {
-          return this.isToggled() ? this.hide() : this.show();
-        },
-
-        show() {
-          if (this.container && uikitUtil.parent(this.$el) !== this.container) {
-            uikitUtil.append(this.container, this.$el);
-            return new Promise((resolve) =>
-            requestAnimationFrame(() => this.show().then(resolve)));
-
-          }
-
-          return this.toggleElement(this.$el, true, animate);
-        },
-
-        hide() {
-          return this.toggleElement(this.$el, false, animate);
-        } } };
-
-
-
-    function animate(el, show, _ref6) {let { transitionElement, _toggle } = _ref6;
-      return new Promise((resolve, reject) =>
-      uikitUtil.once(el, 'show hide', () => {
-        el._reject == null ? void 0 : el._reject();
-        el._reject = reject;
-
-        _toggle(el, show);
-
-        const off = uikitUtil.once(
-        transitionElement,
-        'transitionstart',
-        () => {
-          uikitUtil.once(transitionElement, 'transitionend transitioncancel', resolve, {
-            self: true });
-
-          clearTimeout(timer);
-        },
-        { self: true });
-
-
-        const timer = setTimeout(() => {
-          off();
-          resolve();
-        }, toMs(uikitUtil.css(transitionElement, 'transitionDuration')));
-      })).
-      then(() => delete el._reject);
+            uikitUtil.on(document, 'keydown', function (e) {
+                if (e.keyCode === 27 && active && active.escClose) {
+                    e.preventDefault();
+                    active.hide();
+                }
+            })
+        ];
     }
 
-    function toMs(time) {
-      return time ? uikitUtil.endsWith(time, 'ms') ? uikitUtil.toFloat(time) : uikitUtil.toFloat(time) * 1000 : 0;
+    function deregisterEvents() {
+        events && events.forEach(function (unbind) { return unbind(); });
+        events = null;
     }
 
-    function preventOverscroll(el) {
-      if (CSS.supports('overscroll-behavior', 'contain')) {
-        const elements = filterChildren(el, (child) => /auto|scroll/.test(uikitUtil.css(child, 'overflow')));
-        uikitUtil.css(elements, 'overscrollBehavior', 'contain');
-        return () => uikitUtil.css(elements, 'overscrollBehavior', '');
-      }
+    function animate(ref) {
+        var transitionElement = ref.transitionElement;
+        var _toggle = ref._toggle;
 
-      let startClientY;
+        return function (el, show) { return new uikitUtil.Promise(function (resolve, reject) { return uikitUtil.once(el, 'show hide', function () {
+                    el._reject && el._reject();
+                    el._reject = reject;
 
-      const events = [
-      uikitUtil.on(
-      el,
-      'touchstart',
-      (_ref7) => {let { targetTouches } = _ref7;
-        if (targetTouches.length === 1) {
-          startClientY = targetTouches[0].clientY;
-        }
-      },
-      { passive: true }),
+                    _toggle(el, show);
 
-
-      uikitUtil.on(
-      el,
-      'touchmove',
-      (e) => {
-        if (e.targetTouches.length !== 1) {
-          return;
-        }
-
-        let [scrollParent] = uikitUtil.scrollParents(e.target, /auto|scroll/);
-        if (!uikitUtil.within(scrollParent, el)) {
-          scrollParent = el;
-        }
-
-        const clientY = e.targetTouches[0].clientY - startClientY;
-        const { scrollTop, scrollHeight, clientHeight } = scrollParent;
-
-        if (
-        clientHeight >= scrollHeight ||
-        scrollTop === 0 && clientY > 0 ||
-        scrollHeight - scrollTop <= clientHeight && clientY < 0)
-        {
-          e.cancelable && e.preventDefault();
-        }
-      },
-      { passive: false })];
-
-
-
-      return () => events.forEach((fn) => fn());
+                    if (uikitUtil.toMs(uikitUtil.css(transitionElement, 'transitionDuration'))) {
+                        uikitUtil.once(transitionElement, 'transitionend', resolve, false, function (e) { return e.target === transitionElement; });
+                    } else {
+                        resolve();
+                    }
+                }); }
+            ); };
     }
 
-    let prevented;
-    function preventBackgroundScroll() {
-      if (prevented) {
-        return uikitUtil.noop;
-      }
-      prevented = true;
+    function Transitioner(prev, next, dir, ref) {
+        var animation = ref.animation;
+        var easing = ref.easing;
 
-      const { scrollingElement } = document;
-      uikitUtil.css(scrollingElement, {
-        overflowY: 'hidden',
-        touchAction: 'none',
-        paddingRight: uikitUtil.width(window) - scrollingElement.clientWidth });
 
-      return () => {
-        prevented = false;
-        uikitUtil.css(scrollingElement, { overflowY: '', touchAction: '', paddingRight: '' });
-      };
-    }
+        var percent = animation.percent;
+        var translate = animation.translate;
+        var show = animation.show; if ( show === void 0 ) show = uikitUtil.noop;
+        var props = show(dir);
+        var deferred = new uikitUtil.Deferred();
 
-    function filterChildren(el, fn) {
-      const children = [];
-      uikitUtil.apply(el, (node) => {
-        if (fn(node)) {
-          children.push(node);
-        }
-      });
-      return children;
-    }
+        return {
 
-    function isSameSiteAnchor(a) {
-      return ['origin', 'pathname', 'search'].every((part) => a[part] === location[part]);
-    }
+            dir: dir,
 
-    function Transitioner(prev, next, dir, _ref) {let { animation, easing } = _ref;
-      const { percent, translate, show = uikitUtil.noop } = animation;
-      const props = show(dir);
-      const deferred = new uikitUtil.Deferred();
+            show: function(duration, percent, linear) {
+                var this$1 = this;
+                if ( percent === void 0 ) percent = 0;
 
-      return {
-        dir,
 
-        show(duration, percent, linear) {if (percent === void 0) {percent = 0;}
-          const timing = linear ? 'linear' : easing;
-          duration -= Math.round(duration * uikitUtil.clamp(percent, -1, 1));
+                var timing = linear ? 'linear' : easing;
+                duration -= Math.round(duration * uikitUtil.clamp(percent, -1, 1));
 
-          this.translate(percent);
+                this.translate(percent);
 
-          triggerUpdate(next, 'itemin', { percent, duration, timing, dir });
-          triggerUpdate(prev, 'itemout', { percent: 1 - percent, duration, timing, dir });
+                triggerUpdate(next, 'itemin', {percent: percent, duration: duration, timing: timing, dir: dir});
+                triggerUpdate(prev, 'itemout', {percent: 1 - percent, duration: duration, timing: timing, dir: dir});
 
-          Promise.all([
-          uikitUtil.Transition.start(next, props[1], duration, timing),
-          uikitUtil.Transition.start(prev, props[0], duration, timing)]).
-          then(() => {
-            this.reset();
-            deferred.resolve();
-          }, uikitUtil.noop);
+                uikitUtil.Promise.all([
+                    uikitUtil.Transition.start(next, props[1], duration, timing),
+                    uikitUtil.Transition.start(prev, props[0], duration, timing)
+                ]).then(function () {
+                    this$1.reset();
+                    deferred.resolve();
+                }, uikitUtil.noop);
 
-          return deferred.promise;
-        },
+                return deferred.promise;
+            },
 
-        cancel() {
-          uikitUtil.Transition.cancel([next, prev]);
-        },
+            stop: function() {
+                return uikitUtil.Transition.stop([next, prev]);
+            },
 
-        reset() {
-          for (const prop in props[0]) {
-            uikitUtil.css([next, prev], prop, '');
-          }
-        },
+            cancel: function() {
+                uikitUtil.Transition.cancel([next, prev]);
+            },
 
-        forward(duration, percent) {if (percent === void 0) {percent = this.percent();}
-          uikitUtil.Transition.cancel([next, prev]);
-          return this.show(duration, percent, true);
-        },
+            reset: function() {
+                for (var prop in props[0]) {
+                    uikitUtil.css([next, prev], prop, '');
+                }
+            },
 
-        translate(percent) {
-          this.reset();
+            forward: function(duration, percent) {
+                if ( percent === void 0 ) percent = this.percent();
 
-          const props = translate(percent, dir);
-          uikitUtil.css(next, props[1]);
-          uikitUtil.css(prev, props[0]);
-          triggerUpdate(next, 'itemtranslatein', { percent, dir });
-          triggerUpdate(prev, 'itemtranslateout', { percent: 1 - percent, dir });
-        },
+                uikitUtil.Transition.cancel([next, prev]);
+                return this.show(duration, percent, true);
 
-        percent() {
-          return percent(prev || next, next, dir);
-        },
+            },
 
-        getDistance() {
-          return prev == null ? void 0 : prev.offsetWidth;
-        } };
+            translate: function(percent) {
+
+                this.reset();
+
+                var props = translate(percent, dir);
+                uikitUtil.css(next, props[1]);
+                uikitUtil.css(prev, props[0]);
+                triggerUpdate(next, 'itemtranslatein', {percent: percent, dir: dir});
+                triggerUpdate(prev, 'itemtranslateout', {percent: 1 - percent, dir: dir});
+
+            },
+
+            percent: function() {
+                return percent(prev || next, next, dir);
+            },
+
+            getDistance: function() {
+                return prev && prev.offsetWidth;
+            }
+
+        };
 
     }
 
     function triggerUpdate(el, type, data) {
-      uikitUtil.trigger(el, uikitUtil.createEvent(type, false, false, data));
+        uikitUtil.trigger(el, uikitUtil.createEvent(type, false, false, data));
     }
 
-    var Resize = {
-      connected() {var _this$$options$resize;
-        this.registerObserver(
-        uikitUtil.observeResize(((_this$$options$resize = this.$options.resizeTargets) == null ? void 0 : _this$$options$resize.call(this)) || this.$el, () =>
-        this.$emit('resize')));
-
-
-      } };
-
     var SliderAutoplay = {
-      props: {
-        autoplay: Boolean,
-        autoplayInterval: Number,
-        pauseOnHover: Boolean },
 
-
-      data: {
-        autoplay: false,
-        autoplayInterval: 7000,
-        pauseOnHover: true },
-
-
-      connected() {
-        this.autoplay && this.startAutoplay();
-      },
-
-      disconnected() {
-        this.stopAutoplay();
-      },
-
-      update() {
-        uikitUtil.attr(this.slides, 'tabindex', '-1');
-      },
-
-      events: [
-      {
-        name: 'visibilitychange',
-
-        el() {
-          return document;
+        props: {
+            autoplay: Boolean,
+            autoplayInterval: Number,
+            pauseOnHover: Boolean
         },
 
-        filter() {
-          return this.autoplay;
+        data: {
+            autoplay: false,
+            autoplayInterval: 7000,
+            pauseOnHover: true
         },
 
-        handler() {
-          if (document.hidden) {
-            this.stopAutoplay();
-          } else {
+        connected: function() {
             this.startAutoplay();
-          }
-        } }],
-
-
-
-      methods: {
-        startAutoplay() {
-          this.stopAutoplay();
-
-          this.interval = setInterval(
-          () =>
-          (!this.draggable || !uikitUtil.$(':focus', this.$el)) && (
-          !this.pauseOnHover || !uikitUtil.matches(this.$el, ':hover')) &&
-          !this.stack.length &&
-          this.show('next'),
-          this.autoplayInterval);
-
+            this.userInteracted = false;
         },
 
-        stopAutoplay() {
-          this.interval && clearInterval(this.interval);
-        } } };
+        disconnected: function() {
+            this.stopAutoplay();
+        },
 
-    const pointerOptions = { passive: false, capture: true };
-    const pointerUpOptions = { passive: true, capture: true };
-    const pointerDown = 'touchstart mousedown';
-    const pointerMove = 'touchmove mousemove';
-    const pointerUp = 'touchend touchcancel mouseup click input scroll';
+        events: [
+
+            {
+
+                name: 'visibilitychange',
+
+                el: document,
+
+                handler: function() {
+                    if (document.hidden) {
+                        this.stopAutoplay();
+                    } else {
+                        !this.userInteracted && this.startAutoplay();
+                    }
+                }
+
+            },
+
+            {
+
+                name: uikitUtil.pointerDown,
+                handler: function() {
+                    this.userInteracted = true;
+                    this.stopAutoplay();
+                }
+
+            },
+
+            {
+
+                name: 'mouseenter',
+
+                filter: function() {
+                    return this.autoplay;
+                },
+
+                handler: function() {
+                    this.isHovering = true;
+                }
+
+            },
+
+            {
+
+                name: 'mouseleave',
+
+                filter: function() {
+                    return this.autoplay;
+                },
+
+                handler: function() {
+                    this.isHovering = false;
+                }
+
+            }
+
+        ],
+
+        methods: {
+
+            startAutoplay: function() {
+                var this$1 = this;
+
+
+                this.stopAutoplay();
+
+                if (this.autoplay) {
+                    this.interval = setInterval(
+                        function () { return !(this$1.isHovering && this$1.pauseOnHover) && !this$1.stack.length && this$1.show('next'); },
+                        this.autoplayInterval
+                    );
+                }
+
+            },
+
+            stopAutoplay: function() {
+                if (this.interval) {
+                    clearInterval(this.interval);
+                }
+            }
+
+        }
+
+    };
 
     var SliderDrag = {
-      props: {
-        draggable: Boolean },
+
+        props: {
+            draggable: Boolean
+        },
+
+        data: {
+            draggable: true,
+            threshold: 10
+        },
+
+        created: function() {
+            var this$1 = this;
 
 
-      data: {
-        draggable: true,
-        threshold: 10 },
+            ['start', 'move', 'end'].forEach(function (key) {
+
+                var fn = this$1[key];
+                this$1[key] = function (e) {
+
+                    var pos = uikitUtil.getPos(e).x * (uikitUtil.isRtl ? -1 : 1);
+
+                    this$1.prevPos = pos !== this$1.pos ? this$1.pos : this$1.prevPos;
+                    this$1.pos = pos;
+
+                    fn(e);
+                };
+
+            });
+
+        },
+
+        events: [
+
+            {
+
+                name: uikitUtil.pointerDown,
+
+                delegate: function() {
+                    return this.selSlides;
+                },
+
+                handler: function(e) {
+
+                    if (!this.draggable
+                        || !uikitUtil.isTouch(e) && hasTextNodesOnly(e.target)
+                        || e.button > 0
+                        || this.length < 2
+                    ) {
+                        return;
+                    }
+
+                    this.start(e);
+                }
+
+            },
+
+            {
+
+                // Workaround for iOS 11 bug: https://bugs.webkit.org/show_bug.cgi?id=184250
+
+                name: 'touchmove',
+                passive: false,
+                handler: 'move',
+                delegate: function() {
+                    return this.selSlides;
+                }
+
+            },
+
+            {
+                name: 'dragstart',
+
+                handler: function(e) {
+                    e.preventDefault();
+                }
+            }
+
+        ],
+
+        methods: {
+
+            start: function() {
+                var this$1 = this;
 
 
-      created() {
-        for (const key of ['start', 'move', 'end']) {
-          const fn = this[key];
-          this[key] = (e) => {
-            const pos = uikitUtil.getEventPos(e).x * (uikitUtil.isRtl ? -1 : 1);
+                this.drag = this.pos;
 
-            this.prevPos = pos === this.pos ? this.prevPos : this.pos;
-            this.pos = pos;
+                if (this._transitioner) {
 
-            fn(e);
-          };
+                    this.percent = this._transitioner.percent();
+                    this.drag += this._transitioner.getDistance() * this.percent * this.dir;
+
+                    this._transitioner.cancel();
+                    this._transitioner.translate(this.percent);
+
+                    this.dragging = true;
+
+                    this.stack = [];
+
+                } else {
+                    this.prevIndex = this.index;
+                }
+
+                // See above workaround notice
+                var off = uikitUtil.pointerMove !== 'touchmove'
+                    ? uikitUtil.on(document, uikitUtil.pointerMove, this.move, {passive: false})
+                    : uikitUtil.noop;
+                this.unbindMove = function () {
+                    off();
+                    this$1.unbindMove = null;
+                };
+                uikitUtil.on(window, 'scroll', this.unbindMove);
+                uikitUtil.on(document, uikitUtil.pointerUp, this.end, true);
+
+            },
+
+            move: function(e) {
+                var this$1 = this;
+
+
+                // See above workaround notice
+                if (!this.unbindMove) {
+                    return;
+                }
+
+                var distance = this.pos - this.drag;
+
+                if (distance === 0 || this.prevPos === this.pos || !this.dragging && Math.abs(distance) < this.threshold) {
+                    return;
+                }
+
+                e.cancelable && e.preventDefault();
+
+                this.dragging = true;
+                this.dir = (distance < 0 ? 1 : -1);
+
+                var ref = this;
+                var slides = ref.slides;
+                var ref$1 = this;
+                var prevIndex = ref$1.prevIndex;
+                var dis = Math.abs(distance);
+                var nextIndex = this.getIndex(prevIndex + this.dir, prevIndex);
+                var width = this._getDistance(prevIndex, nextIndex) || slides[prevIndex].offsetWidth;
+
+                while (nextIndex !== prevIndex && dis > width) {
+
+                    this.drag -= width * this.dir;
+
+                    prevIndex = nextIndex;
+                    dis -= width;
+                    nextIndex = this.getIndex(prevIndex + this.dir, prevIndex);
+                    width = this._getDistance(prevIndex, nextIndex) || slides[prevIndex].offsetWidth;
+
+                }
+
+                this.percent = dis / width;
+
+                var prev = slides[prevIndex];
+                var next = slides[nextIndex];
+                var changed = this.index !== nextIndex;
+                var edge = prevIndex === nextIndex;
+
+                var itemShown;
+
+                [this.index, this.prevIndex].filter(function (i) { return !uikitUtil.includes([nextIndex, prevIndex], i); }).forEach(function (i) {
+                    uikitUtil.trigger(slides[i], 'itemhidden', [this$1]);
+
+                    if (edge) {
+                        itemShown = true;
+                        this$1.prevIndex = prevIndex;
+                    }
+
+                });
+
+                if (this.index === prevIndex && this.prevIndex !== prevIndex || itemShown) {
+                    uikitUtil.trigger(slides[this.index], 'itemshown', [this]);
+                }
+
+                if (changed) {
+                    this.prevIndex = prevIndex;
+                    this.index = nextIndex;
+
+                    !edge && uikitUtil.trigger(prev, 'beforeitemhide', [this]);
+                    uikitUtil.trigger(next, 'beforeitemshow', [this]);
+                }
+
+                this._transitioner = this._translate(Math.abs(this.percent), prev, !edge && next);
+
+                if (changed) {
+                    !edge && uikitUtil.trigger(prev, 'itemhide', [this]);
+                    uikitUtil.trigger(next, 'itemshow', [this]);
+                }
+
+            },
+
+            end: function() {
+
+                uikitUtil.off(window, 'scroll', this.unbindMove);
+                this.unbindMove && this.unbindMove();
+                uikitUtil.off(document, uikitUtil.pointerUp, this.end, true);
+
+                if (this.dragging) {
+
+                    this.dragging = null;
+
+                    if (this.index === this.prevIndex) {
+                        this.percent = 1 - this.percent;
+                        this.dir *= -1;
+                        this._show(false, this.index, true);
+                        this._transitioner = null;
+                    } else {
+
+                        var dirChange = (uikitUtil.isRtl ? this.dir * (uikitUtil.isRtl ? 1 : -1) : this.dir) < 0 === this.prevPos > this.pos;
+                        this.index = dirChange ? this.index : this.prevIndex;
+
+                        if (dirChange) {
+                            this.percent = 1 - this.percent;
+                        }
+
+                        this.show(this.dir > 0 && !dirChange || this.dir < 0 && dirChange ? 'next' : 'previous', true);
+                    }
+
+                    uikitUtil.preventClick();
+
+                }
+
+                this.drag
+                    = this.percent
+                    = null;
+
+            }
+
         }
-      },
 
-      events: [
-      {
-        name: pointerDown,
+    };
 
-        passive: true,
-
-        delegate() {
-          return this.selSlides;
-        },
-
-        handler(e) {
-          if (
-          !this.draggable ||
-          !uikitUtil.isTouch(e) && hasSelectableText(e.target) ||
-          uikitUtil.closest(e.target, uikitUtil.selInput) ||
-          e.button > 0 ||
-          this.length < 2)
-          {
-            return;
-          }
-
-          this.start(e);
-        } },
-
-
-      {
-        name: 'dragstart',
-
-        handler(e) {
-          e.preventDefault();
-        } },
-
-
-      {
-        // iOS workaround for slider stopping if swiping fast
-        name: pointerMove,
-        el() {
-          return this.list;
-        },
-        handler: uikitUtil.noop,
-        ...pointerOptions }],
-
-
-
-      methods: {
-        start() {
-          this.drag = this.pos;
-
-          if (this._transitioner) {
-            this.percent = this._transitioner.percent();
-            this.drag += this._transitioner.getDistance() * this.percent * this.dir;
-
-            this._transitioner.cancel();
-            this._transitioner.translate(this.percent);
-
-            this.dragging = true;
-
-            this.stack = [];
-          } else {
-            this.prevIndex = this.index;
-          }
-
-          uikitUtil.on(document, pointerMove, this.move, pointerOptions);
-
-          // 'input' event is triggered by video controls
-          uikitUtil.on(document, pointerUp, this.end, pointerUpOptions);
-
-          uikitUtil.css(this.list, 'userSelect', 'none');
-        },
-
-        move(e) {
-          const distance = this.pos - this.drag;
-
-          if (
-          distance === 0 ||
-          this.prevPos === this.pos ||
-          !this.dragging && Math.abs(distance) < this.threshold)
-          {
-            return;
-          }
-
-          // prevent click event
-          uikitUtil.css(this.list, 'pointerEvents', 'none');
-
-          e.cancelable && e.preventDefault();
-
-          this.dragging = true;
-          this.dir = distance < 0 ? 1 : -1;
-
-          const { slides } = this;
-          let { prevIndex } = this;
-          let dis = Math.abs(distance);
-          let nextIndex = this.getIndex(prevIndex + this.dir, prevIndex);
-          let width = this._getDistance(prevIndex, nextIndex) || slides[prevIndex].offsetWidth;
-
-          while (nextIndex !== prevIndex && dis > width) {
-            this.drag -= width * this.dir;
-
-            prevIndex = nextIndex;
-            dis -= width;
-            nextIndex = this.getIndex(prevIndex + this.dir, prevIndex);
-            width = this._getDistance(prevIndex, nextIndex) || slides[prevIndex].offsetWidth;
-          }
-
-          this.percent = dis / width;
-
-          const prev = slides[prevIndex];
-          const next = slides[nextIndex];
-          const changed = this.index !== nextIndex;
-          const edge = prevIndex === nextIndex;
-
-          let itemShown;
-
-          [this.index, this.prevIndex].
-          filter((i) => !uikitUtil.includes([nextIndex, prevIndex], i)).
-          forEach((i) => {
-            uikitUtil.trigger(slides[i], 'itemhidden', [this]);
-
-            if (edge) {
-              itemShown = true;
-              this.prevIndex = prevIndex;
-            }
-          });
-
-          if (this.index === prevIndex && this.prevIndex !== prevIndex || itemShown) {
-            uikitUtil.trigger(slides[this.index], 'itemshown', [this]);
-          }
-
-          if (changed) {
-            this.prevIndex = prevIndex;
-            this.index = nextIndex;
-
-            !edge && uikitUtil.trigger(prev, 'beforeitemhide', [this]);
-            uikitUtil.trigger(next, 'beforeitemshow', [this]);
-          }
-
-          this._transitioner = this._translate(Math.abs(this.percent), prev, !edge && next);
-
-          if (changed) {
-            !edge && uikitUtil.trigger(prev, 'itemhide', [this]);
-            uikitUtil.trigger(next, 'itemshow', [this]);
-          }
-        },
-
-        end() {
-          uikitUtil.off(document, pointerMove, this.move, pointerOptions);
-          uikitUtil.off(document, pointerUp, this.end, pointerUpOptions);
-
-          if (this.dragging) {
-            this.dragging = null;
-
-            if (this.index === this.prevIndex) {
-              this.percent = 1 - this.percent;
-              this.dir *= -1;
-              this._show(false, this.index, true);
-              this._transitioner = null;
-            } else {
-              const dirChange =
-              (uikitUtil.isRtl ? this.dir * (uikitUtil.isRtl ? 1 : -1) : this.dir) < 0 ===
-              this.prevPos > this.pos;
-              this.index = dirChange ? this.index : this.prevIndex;
-
-              if (dirChange) {
-                this.percent = 1 - this.percent;
-              }
-
-              this.show(
-              this.dir > 0 && !dirChange || this.dir < 0 && dirChange ?
-              'next' :
-              'previous',
-              true);
-
-            }
-          }
-
-          uikitUtil.css(this.list, { userSelect: '', pointerEvents: '' });
-
-          this.drag = this.percent = null;
-        } } };
-
-
-
-    function hasSelectableText(el) {
-      return (
-        uikitUtil.css(el, 'userSelect') !== 'none' &&
-        uikitUtil.toNodes(el.childNodes).some((el) => el.nodeType === 3 && el.textContent.trim()));
-
+    function hasTextNodesOnly(el) {
+        return !el.children.length && el.childNodes.length;
     }
 
     var SliderNav = {
-      data: {
-        selNav: false },
 
-
-      computed: {
-        nav(_ref, $el) {let { selNav } = _ref;
-          return uikitUtil.$(selNav, $el);
+        data: {
+            selNav: false
         },
 
-        selNavItem(_ref2) {let { attrItem } = _ref2;
-          return "[" + attrItem + "],[data-" + attrItem + "]";
+        computed: {
+
+            nav: function(ref, $el) {
+                var selNav = ref.selNav;
+
+                return uikitUtil.$(selNav, $el);
+            },
+
+            selNavItem: function(ref) {
+                var attrItem = ref.attrItem;
+
+                return ("[" + attrItem + "],[data-" + attrItem + "]");
+            },
+
+            navItems: function(_, $el) {
+                return uikitUtil.$$(this.selNavItem, $el);
+            }
+
         },
 
-        navItems(_, $el) {
-          return uikitUtil.$$(this.selNavItem, $el);
-        } },
+        update: {
+
+            write: function() {
+                var this$1 = this;
 
 
-      update: {
-        write() {
-          if (this.nav && this.length !== this.nav.children.length) {
-            uikitUtil.html(
-            this.nav,
-            this.slides.
-            map((_, i) => "<li " + this.attrItem + "=\"" + i + "\"><a href></a></li>").
-            join(''));
+                if (this.nav && this.length !== this.nav.children.length) {
+                    uikitUtil.html(this.nav, this.slides.map(function (_, i) { return ("<li " + (this$1.attrItem) + "=\"" + i + "\"><a href=\"#\"></a></li>"); }).join(''));
+                }
 
-          }
+                uikitUtil.toggleClass(uikitUtil.$$(this.selNavItem, this.$el).concat(this.nav), 'uk-hidden', !this.maxIndex);
 
-          this.navItems.concat(this.nav).forEach((el) => el && (el.hidden = !this.maxIndex));
+                this.updateNav();
 
-          this.updateNav();
+            },
+
+            events: ['resize']
+
         },
 
-        events: ['resize'] },
+        events: [
+
+            {
+
+                name: 'click',
+
+                delegate: function() {
+                    return this.selNavItem;
+                },
+
+                handler: function(e) {
+                    e.preventDefault();
+                    this.show(uikitUtil.data(e.current, this.attrItem));
+                }
+
+            },
+
+            {
+
+                name: 'itemshow',
+                handler: 'updateNav'
+
+            }
+
+        ],
+
+        methods: {
+
+            updateNav: function() {
+                var this$1 = this;
 
 
-      events: [
-      {
-        name: 'click',
+                var i = this.getValidIndex();
+                this.navItems.forEach(function (el) {
 
-        delegate() {
-          return this.selNavItem;
-        },
+                    var cmd = uikitUtil.data(el, this$1.attrItem);
 
-        handler(e) {
-          e.preventDefault();
-          this.show(uikitUtil.data(e.current, this.attrItem));
-        } },
+                    uikitUtil.toggleClass(el, this$1.clsActive, uikitUtil.toNumber(cmd) === i);
+                    uikitUtil.toggleClass(el, 'uk-invisible', this$1.finite && (cmd === 'previous' && i === 0 || cmd === 'next' && i >= this$1.maxIndex));
+                });
 
+            }
 
-      {
-        name: 'itemshow',
-        handler: 'updateNav' }],
+        }
 
-
-
-      methods: {
-        updateNav() {
-          const i = this.getValidIndex();
-          for (const el of this.navItems) {
-            const cmd = uikitUtil.data(el, this.attrItem);
-
-            uikitUtil.toggleClass(el, this.clsActive, uikitUtil.toNumber(cmd) === i);
-            uikitUtil.toggleClass(
-            el,
-            'uk-invisible',
-            this.finite && (
-            cmd === 'previous' && i === 0 || cmd === 'next' && i >= this.maxIndex));
-
-          }
-        } } };
+    };
 
     var Slider = {
-      mixins: [SliderAutoplay, SliderDrag, SliderNav, Resize],
 
-      props: {
-        clsActivated: Boolean,
-        easing: String,
-        index: Number,
-        finite: Boolean,
-        velocity: Number,
-        selSlides: String },
+        mixins: [SliderAutoplay, SliderDrag, SliderNav],
 
-
-      data: () => ({
-        easing: 'ease',
-        finite: false,
-        velocity: 1,
-        index: 0,
-        prevIndex: -1,
-        stack: [],
-        percent: 0,
-        clsActive: 'uk-active',
-        clsActivated: false,
-        Transitioner: false,
-        transitionOptions: {} }),
-
-
-      connected() {
-        this.prevIndex = -1;
-        this.index = this.getValidIndex(this.$props.index);
-        this.stack = [];
-      },
-
-      disconnected() {
-        uikitUtil.removeClass(this.slides, this.clsActive);
-      },
-
-      computed: {
-        duration(_ref, $el) {let { velocity } = _ref;
-          return speedUp($el.offsetWidth / velocity);
+        props: {
+            clsActivated: Boolean,
+            easing: String,
+            index: Number,
+            finite: Boolean,
+            velocity: Number
         },
 
-        list(_ref2, $el) {let { selList } = _ref2;
-          return uikitUtil.$(selList, $el);
-        },
+        data: function () { return ({
+            easing: 'ease',
+            finite: false,
+            velocity: 1,
+            index: 0,
+            stack: [],
+            percent: 0,
+            clsActive: 'uk-active',
+            clsActivated: false,
+            Transitioner: false,
+            transitionOptions: {}
+        }); },
 
-        maxIndex() {
-          return this.length - 1;
-        },
+        computed: {
 
-        selSlides(_ref3) {let { selList, selSlides } = _ref3;
-          return selList + " " + (selSlides || '> *');
-        },
+            duration: function(ref, $el) {
+                var velocity = ref.velocity;
 
-        slides: {
-          get() {
-            return uikitUtil.$$(this.selSlides, this.$el);
-          },
+                return speedUp($el.offsetWidth / velocity);
+            },
 
-          watch() {
-            this.$emit('resize');
-          } },
+            length: function() {
+                return this.slides.length;
+            },
 
+            list: function(ref, $el) {
+                var selList = ref.selList;
 
-        length() {
-          return this.slides.length;
-        } },
+                return uikitUtil.$(selList, $el);
+            },
 
+            maxIndex: function() {
+                return this.length - 1;
+            },
 
-      methods: {
-        show(index, force) {if (force === void 0) {force = false;}
-          if (this.dragging || !this.length) {
-            return;
-          }
+            selSlides: function(ref) {
+                var selList = ref.selList;
 
-          const { stack } = this;
-          const queueIndex = force ? 0 : stack.length;
-          const reset = () => {
-            stack.splice(queueIndex, 1);
+                return (selList + " > *");
+            },
 
-            if (stack.length) {
-              this.show(stack.shift(), true);
-            }
-          };
-
-          stack[force ? 'unshift' : 'push'](index);
-
-          if (!force && stack.length > 1) {
-            if (stack.length === 2) {
-              this._transitioner.forward(Math.min(this.duration, 200));
+            slides: function() {
+                return uikitUtil.toNodes(this.list.children);
             }
 
-            return;
-          }
+        },
 
-          const prevIndex = this.getIndex(this.index);
-          const prev = uikitUtil.hasClass(this.slides, this.clsActive) && this.slides[prevIndex];
-          const nextIndex = this.getIndex(index, this.index);
-          const next = this.slides[nextIndex];
+        events: {
 
-          if (prev === next) {
-            reset();
-            return;
-          }
+            itemshown: function() {
+                this.$update(this.list);
+            }
 
-          this.dir = getDirection(index, prevIndex);
-          this.prevIndex = prevIndex;
-          this.index = nextIndex;
+        },
 
-          if (
-          prev && !uikitUtil.trigger(prev, 'beforeitemhide', [this]) ||
-          !uikitUtil.trigger(next, 'beforeitemshow', [this, prev]))
-          {
-            this.index = this.prevIndex;
-            reset();
-            return;
-          }
+        methods: {
 
-          const promise = this._show(prev, next, force).then(() => {
-            prev && uikitUtil.trigger(prev, 'itemhidden', [this]);
-            uikitUtil.trigger(next, 'itemshown', [this]);
+            show: function(index, force) {
+                var this$1 = this;
+                if ( force === void 0 ) force = false;
 
-            return new Promise((resolve) => {
-              requestAnimationFrame(() => {
-                stack.shift();
-                if (stack.length) {
-                  this.show(stack.shift(), true);
-                } else {
-                  this._transitioner = null;
+
+                if (this.dragging || !this.length) {
+                    return;
                 }
-                resolve();
-              });
-            });
-          });
 
-          prev && uikitUtil.trigger(prev, 'itemhide', [this]);
-          uikitUtil.trigger(next, 'itemshow', [this]);
+                var ref = this;
+                var stack = ref.stack;
+                var queueIndex = force ? 0 : stack.length;
+                var reset = function () {
+                    stack.splice(queueIndex, 1);
 
-          return promise;
-        },
+                    if (stack.length) {
+                        this$1.show(stack.shift(), true);
+                    }
+                };
 
-        getIndex(index, prev) {if (index === void 0) {index = this.index;}if (prev === void 0) {prev = this.index;}
-          return uikitUtil.clamp(uikitUtil.getIndex(index, this.slides, prev, this.finite), 0, this.maxIndex);
-        },
+                stack[force ? 'unshift' : 'push'](index);
 
-        getValidIndex(index, prevIndex) {if (index === void 0) {index = this.index;}if (prevIndex === void 0) {prevIndex = this.prevIndex;}
-          return this.getIndex(index, prevIndex);
-        },
+                if (!force && stack.length > 1) {
 
-        _show(prev, next, force) {
-          this._transitioner = this._getTransitioner(prev, next, this.dir, {
-            easing: force ?
-            next.offsetWidth < 600 ?
-            'cubic-bezier(0.25, 0.46, 0.45, 0.94)' /* easeOutQuad */ :
-            'cubic-bezier(0.165, 0.84, 0.44, 1)' /* easeOutQuart */ :
-            this.easing,
-            ...this.transitionOptions });
+                    if (stack.length === 2) {
+                        this._transitioner.forward(Math.min(this.duration, 200));
+                    }
 
+                    return;
+                }
 
-          if (!force && !prev) {
-            this._translate(1);
-            return Promise.resolve();
-          }
+                var prevIndex = this.index;
+                var prev = uikitUtil.hasClass(this.slides, this.clsActive) && this.slides[prevIndex];
+                var nextIndex = this.getIndex(index, this.index);
+                var next = this.slides[nextIndex];
 
-          const { length } = this.stack;
-          return this._transitioner[length > 1 ? 'forward' : 'show'](
-          length > 1 ? Math.min(this.duration, 75 + 75 / (length - 1)) : this.duration,
-          this.percent);
+                if (prev === next) {
+                    reset();
+                    return;
+                }
 
-        },
+                this.dir = getDirection(index, prevIndex);
+                this.prevIndex = prevIndex;
+                this.index = nextIndex;
 
-        _getDistance(prev, next) {
-          return this._getTransitioner(prev, prev !== next && next).getDistance();
-        },
+                prev && uikitUtil.trigger(prev, 'beforeitemhide', [this]);
+                if (!uikitUtil.trigger(next, 'beforeitemshow', [this, prev])) {
+                    this.index = this.prevIndex;
+                    reset();
+                    return;
+                }
 
-        _translate(percent, prev, next) {if (prev === void 0) {prev = this.prevIndex;}if (next === void 0) {next = this.index;}
-          const transitioner = this._getTransitioner(prev !== next ? prev : false, next);
-          transitioner.translate(percent);
-          return transitioner;
-        },
+                var promise = this._show(prev, next, force).then(function () {
 
-        _getTransitioner(
-        prev,
-        next,
-        dir,
-        options)
-        {if (prev === void 0) {prev = this.prevIndex;}if (next === void 0) {next = this.index;}if (dir === void 0) {dir = this.dir || 1;}if (options === void 0) {options = this.transitionOptions;}
-          return new this.Transitioner(
-          uikitUtil.isNumber(prev) ? this.slides[prev] : prev,
-          uikitUtil.isNumber(next) ? this.slides[next] : next,
-          dir * (uikitUtil.isRtl ? -1 : 1),
-          options);
+                    prev && uikitUtil.trigger(prev, 'itemhidden', [this$1]);
+                    uikitUtil.trigger(next, 'itemshown', [this$1]);
 
-        } } };
+                    return new uikitUtil.Promise(function (resolve) {
+                        uikitUtil.fastdom.write(function () {
+                            stack.shift();
+                            if (stack.length) {
+                                this$1.show(stack.shift(), true);
+                            } else {
+                                this$1._transitioner = null;
+                            }
+                            resolve();
+                        });
+                    });
 
+                });
 
+                prev && uikitUtil.trigger(prev, 'itemhide', [this]);
+                uikitUtil.trigger(next, 'itemshow', [this]);
+
+                return promise;
+
+            },
+
+            getIndex: function(index, prev) {
+                if ( index === void 0 ) index = this.index;
+                if ( prev === void 0 ) prev = this.index;
+
+                return uikitUtil.clamp(uikitUtil.getIndex(index, this.slides, prev, this.finite), 0, this.maxIndex);
+            },
+
+            getValidIndex: function(index, prevIndex) {
+                if ( index === void 0 ) index = this.index;
+                if ( prevIndex === void 0 ) prevIndex = this.prevIndex;
+
+                return this.getIndex(index, prevIndex);
+            },
+
+            _show: function(prev, next, force) {
+
+                this._transitioner = this._getTransitioner(
+                    prev,
+                    next,
+                    this.dir,
+                    uikitUtil.assign({
+                        easing: force
+                            ? next.offsetWidth < 600
+                                ? 'cubic-bezier(0.25, 0.46, 0.45, 0.94)' /* easeOutQuad */
+                                : 'cubic-bezier(0.165, 0.84, 0.44, 1)' /* easeOutQuart */
+                            : this.easing
+                    }, this.transitionOptions)
+                );
+
+                if (!force && !prev) {
+                    this._transitioner.translate(1);
+                    return uikitUtil.Promise.resolve();
+                }
+
+                var ref = this.stack;
+                var length = ref.length;
+                return this._transitioner[length > 1 ? 'forward' : 'show'](length > 1 ? Math.min(this.duration, 75 + 75 / (length - 1)) : this.duration, this.percent);
+
+            },
+
+            _getDistance: function(prev, next) {
+                return new this._getTransitioner(prev, prev !== next && next).getDistance();
+            },
+
+            _translate: function(percent, prev, next) {
+                if ( prev === void 0 ) prev = this.prevIndex;
+                if ( next === void 0 ) next = this.index;
+
+                var transitioner = this._getTransitioner(prev !== next ? prev : false, next);
+                transitioner.translate(percent);
+                return transitioner;
+            },
+
+            _getTransitioner: function(prev, next, dir, options) {
+                if ( prev === void 0 ) prev = this.prevIndex;
+                if ( next === void 0 ) next = this.index;
+                if ( dir === void 0 ) dir = this.dir || 1;
+                if ( options === void 0 ) options = this.transitionOptions;
+
+                return new this.Transitioner(
+                    uikitUtil.isNumber(prev) ? this.slides[prev] : prev,
+                    uikitUtil.isNumber(next) ? this.slides[next] : next,
+                    dir * (uikitUtil.isRtl ? -1 : 1),
+                    options
+                );
+            }
+
+        }
+
+    };
 
     function getDirection(index, prevIndex) {
-      return index === 'next' ? 1 : index === 'previous' ? -1 : index < prevIndex ? -1 : 1;
+        return index === 'next'
+            ? 1
+            : index === 'previous'
+                ? -1
+                : index < prevIndex
+                    ? -1
+                    : 1;
     }
 
     function speedUp(x) {
-      return 0.5 * x + 300; // parabola through (400,500; 600,600; 1800,1200)
+        return .5 * x + 300; // parabola through (400,500; 600,600; 1800,1200)
     }
 
     var Slideshow = {
-      mixins: [Slider],
 
-      props: {
-        animation: String },
+        mixins: [Slider],
 
-
-      data: {
-        animation: 'slide',
-        clsActivated: 'uk-transition-active',
-        Animations: Animations$1,
-        Transitioner },
-
-
-      computed: {
-        animation(_ref) {let { animation, Animations } = _ref;
-          return { ...(Animations[animation] || Animations.slide), name: animation };
+        props: {
+            animation: String
         },
 
-        transitionOptions() {
-          return { animation: this.animation };
-        } },
-
-
-      events: {
-        beforeitemshow(_ref2) {let { target } = _ref2;
-          uikitUtil.addClass(target, this.clsActive);
+        data: {
+            animation: 'slide',
+            clsActivated: 'uk-transition-active',
+            Animations: Animations,
+            Transitioner: Transitioner
         },
 
-        itemshown(_ref3) {let { target } = _ref3;
-          uikitUtil.addClass(target, this.clsActivated);
+        computed: {
+
+            animation: function(ref) {
+                var animation = ref.animation;
+                var Animations$$1 = ref.Animations;
+
+                return uikitUtil.assign(animation in Animations$$1 ? Animations$$1[animation] : Animations$$1.slide, {name: animation});
+            },
+
+            transitionOptions: function() {
+                return {animation: this.animation};
+            }
+
         },
 
-        itemhidden(_ref4) {let { target } = _ref4;
-          uikitUtil.removeClass(target, this.clsActive, this.clsActivated);
-        } } };
+        events: {
+
+            'itemshow itemhide itemshown itemhidden': function(ref) {
+                var target = ref.target;
+
+                this.$update(target);
+            },
+
+            itemshow: function() {
+                uikitUtil.isNumber(this.prevIndex) && uikitUtil.fastdom.flush(); // iOS 10+ will honor the video.play only if called from a gesture handler
+            },
+
+            beforeitemshow: function(ref) {
+                var target = ref.target;
+
+                uikitUtil.addClass(target, this.clsActive);
+            },
+
+            itemshown: function(ref) {
+                var target = ref.target;
+
+                uikitUtil.addClass(target, this.clsActivated);
+            },
+
+            itemhidden: function(ref) {
+                var target = ref.target;
+
+                uikitUtil.removeClass(target, this.clsActive, this.clsActivated);
+            }
+
+        }
+
+    };
 
     var Component = {
-      mixins: [Container, Modal, Togglable, Slideshow],
 
-      functional: true,
+        mixins: [Container, Modal, Togglable, Slideshow],
 
-      props: {
-        delayControls: Number,
-        preload: Number,
-        videoAutoplay: Boolean,
-        template: String },
+        functional: true,
 
-
-      data: () => ({
-        preload: 1,
-        videoAutoplay: false,
-        delayControls: 3000,
-        items: [],
-        cls: 'uk-open',
-        clsPage: 'uk-lightbox-page',
-        selList: '.uk-lightbox-items',
-        attrItem: 'uk-lightbox-item',
-        selClose: '.uk-close-large',
-        selCaption: '.uk-lightbox-caption',
-        pauseOnHover: false,
-        velocity: 2,
-        Animations,
-        template: "<div class=\"uk-lightbox uk-overflow-hidden\"> <ul class=\"uk-lightbox-items\"></ul> <div class=\"uk-lightbox-toolbar uk-position-top uk-text-right uk-transition-slide-top uk-transition-opaque\"> <button class=\"uk-lightbox-toolbar-icon uk-close-large\" type=\"button\" uk-close></button> </div> <a class=\"uk-lightbox-button uk-position-center-left uk-position-medium uk-transition-fade\" href uk-slidenav-previous uk-lightbox-item=\"previous\"></a> <a class=\"uk-lightbox-button uk-position-center-right uk-position-medium uk-transition-fade\" href uk-slidenav-next uk-lightbox-item=\"next\"></a> <div class=\"uk-lightbox-toolbar uk-lightbox-caption uk-position-bottom uk-text-center uk-transition-slide-bottom uk-transition-opaque\"></div> </div>" }),
-
-
-
-
-
-
-
-
-
-
-      created() {
-        const $el = uikitUtil.$(this.template);
-        const list = uikitUtil.$(this.selList, $el);
-        this.items.forEach(() => uikitUtil.append(list, '<li>'));
-
-        this.$mount(uikitUtil.append(this.container, $el));
-      },
-
-      computed: {
-        caption(_ref, $el) {let { selCaption } = _ref;
-          return uikitUtil.$(selCaption, $el);
-        } },
-
-
-      events: [
-      {
-        name: uikitUtil.pointerMove + " " + uikitUtil.pointerDown + " keydown",
-
-        handler: 'showControls' },
-
-
-      {
-        name: 'click',
-
-        self: true,
-
-        delegate() {
-          return this.selSlides;
+        props: {
+            delayControls: Number,
+            preload: Number,
+            videoAutoplay: Boolean,
+            template: String
         },
 
-        handler(e) {
-          if (e.defaultPrevented) {
-            return;
-          }
+        data: function () { return ({
+            preload: 1,
+            videoAutoplay: false,
+            delayControls: 3000,
+            items: [],
+            cls: 'uk-open',
+            clsPage: 'uk-lightbox-page',
+            selList: '.uk-lightbox-items',
+            attrItem: 'uk-lightbox-item',
+            selClose: '.uk-close-large',
+            pauseOnHover: false,
+            velocity: 2,
+            Animations: Animations$1,
+            template: "<div class=\"uk-lightbox uk-overflow-hidden\"> <ul class=\"uk-lightbox-items\"></ul> <div class=\"uk-lightbox-toolbar uk-position-top uk-text-right uk-transition-slide-top uk-transition-opaque\"> <button class=\"uk-lightbox-toolbar-icon uk-close-large\" type=\"button\" uk-close></button> </div> <a class=\"uk-lightbox-button uk-position-center-left uk-position-medium uk-transition-fade\" href=\"#\" uk-slidenav-previous uk-lightbox-item=\"previous\"></a> <a class=\"uk-lightbox-button uk-position-center-right uk-position-medium uk-transition-fade\" href=\"#\" uk-slidenav-next uk-lightbox-item=\"next\"></a> <div class=\"uk-lightbox-toolbar uk-lightbox-caption uk-position-bottom uk-text-center uk-transition-slide-bottom uk-transition-opaque\"></div> </div>"
+        }); },
 
-          this.hide();
-        } },
-
-
-      {
-        name: 'shown',
-
-        self: true,
-
-        handler() {
-          this.showControls();
-        } },
-
-
-      {
-        name: 'hide',
-
-        self: true,
-
-        handler() {
-          this.hideControls();
-
-          uikitUtil.removeClass(this.slides, this.clsActive);
-          uikitUtil.Transition.stop(this.slides);
-        } },
+        created: function() {
+            var this$1 = this;
 
 
-      {
-        name: 'hidden',
+            this.$mount(uikitUtil.append(this.container, this.template));
 
-        self: true,
+            this.caption = uikitUtil.$('.uk-lightbox-caption', this.$el);
 
-        handler() {
-          this.$destroy(true);
-        } },
+            this.items.forEach(function () { return uikitUtil.append(this$1.list, '<li></li>'); });
 
-
-      {
-        name: 'keyup',
-
-        el() {
-          return document;
         },
 
-        handler(e) {
-          if (!this.isToggled(this.$el) || !this.draggable) {
-            return;
-          }
+        events: [
 
-          switch (e.keyCode) {
-            case 37:
-              this.show('previous');
-              break;
-            case 39:
-              this.show('next');
-              break;}
+            {
 
-        } },
+                name: (uikitUtil.pointerMove + " " + uikitUtil.pointerDown + " keydown"),
+
+                handler: 'showControls'
+
+            },
+
+            {
+
+                name: uikitUtil.pointerUp,
+
+                self: true,
+
+                delegate: function() {
+                    return this.selSlides;
+                },
+
+                handler: function(e) {
+                    e.preventDefault();
+                    this.hide();
+                }
+
+            },
+
+            {
+
+                name: 'shown',
+
+                self: true,
+
+                handler: function() {
+                    this.startAutoplay();
+                    this.showControls();
+                }
+
+            },
+
+            {
+
+                name: 'hide',
+
+                self: true,
+
+                handler: function() {
+
+                    this.stopAutoplay();
+                    this.hideControls();
+
+                    uikitUtil.removeClass(this.slides, this.clsActive);
+                    uikitUtil.Transition.stop(this.slides);
+
+                }
+            },
+
+            {
+
+                name: 'hidden',
+
+                self: true,
+
+                handler: function() {
+                    this.$destroy(true);
+                }
+
+            },
+
+            {
+
+                name: 'keyup',
+
+                el: document,
+
+                handler: function(e) {
+
+                    if (!this.isToggled(this.$el)) {
+                        return;
+                    }
+
+                    switch (e.keyCode) {
+                        case 37:
+                            this.show('previous');
+                            break;
+                        case 39:
+                            this.show('next');
+                            break;
+                    }
+                }
+            },
+
+            {
+
+                name: 'beforeitemshow',
+
+                handler: function(e) {
+
+                    if (this.isToggled()) {
+                        return;
+                    }
+
+                    this.draggable = false;
+
+                    e.preventDefault();
+
+                    this.toggleNow(this.$el, true);
+
+                    this.animation = Animations$1['scale'];
+                    uikitUtil.removeClass(e.target, this.clsActive);
+                    this.stack.splice(1, 0, this.index);
+
+                }
+
+            },
+
+            {
+
+                name: 'itemshow',
+
+                handler: function(ref) {
+                    var target = ref.target;
 
 
-      {
-        name: 'beforeitemshow',
+                    var i = uikitUtil.index(target);
+                    var ref$1 = this.getItem(i);
+                    var caption = ref$1.caption;
 
-        handler(e) {
-          if (this.isToggled()) {
-            return;
-          }
+                    uikitUtil.css(this.caption, 'display', caption ? '' : 'none');
+                    uikitUtil.html(this.caption, caption);
 
-          this.draggable = false;
+                    for (var j = 0; j <= this.preload; j++) {
+                        this.loadItem(this.getIndex(i + j));
+                        this.loadItem(this.getIndex(i - j));
+                    }
 
-          e.preventDefault();
+                }
 
-          this.toggleElement(this.$el, true, false);
+            },
 
-          this.animation = Animations['scale'];
-          uikitUtil.removeClass(e.target, this.clsActive);
-          this.stack.splice(1, 0, this.index);
-        } },
+            {
 
+                name: 'itemshown',
 
-      {
-        name: 'itemshow',
+                handler: function() {
+                    this.draggable = this.$props.draggable;
+                }
 
-        handler() {
-          uikitUtil.html(this.caption, this.getItem().caption || '');
+            },
 
-          for (let j = -this.preload; j <= this.preload; j++) {
-            this.loadItem(this.index + j);
-          }
-        } },
+            {
 
+                name: 'itemload',
 
-      {
-        name: 'itemshown',
-
-        handler() {
-          this.draggable = this.$props.draggable;
-        } },
+                handler: function(_, item) {
+                    var this$1 = this;
 
 
-      {
-        name: 'itemload',
+                    var source = item.source;
+                    var type = item.type;
+                    var alt = item.alt;
 
-        async handler(_, item) {
-          const { source: src, type, alt = '', poster, attrs = {} } = item;
+                    this.setItem(item, '<span uk-spinner></span>');
 
-          this.setItem(item, '<span uk-spinner></span>');
+                    if (!source) {
+                        return;
+                    }
 
-          if (!src) {
-            return;
-          }
+                    var matches;
 
-          let matches;
-          const iframeAttrs = {
-            allowfullscreen: '',
-            style: 'max-width: 100%; box-sizing: border-box;',
-            'uk-responsive': '',
-            'uk-video': "" + this.videoAutoplay };
+                    // Image
+                    if (type === 'image' || source.match(/\.(jp(e)?g|png|gif|svg)($|\?)/i)) {
 
+                        uikitUtil.getImage(source).then(
+                            function (img) { return this$1.setItem(item, ("<img width=\"" + (img.width) + "\" height=\"" + (img.height) + "\" src=\"" + source + "\" alt=\"" + (alt ? alt : '') + "\">")); },
+                            function () { return this$1.setError(item); }
+                        );
 
-          // Image
-          if (
-          type === 'image' ||
-          src.match(/\.(avif|jpe?g|jfif|a?png|gif|svg|webp)($|\?)/i))
-          {
-            try {
-              const { width, height } = await uikitUtil.getImage(src, attrs.srcset, attrs.size);
-              this.setItem(item, createEl('img', { src, width, height, alt, ...attrs }));
-            } catch (e) {
-              this.setError(item);
+                        // Video
+                    } else if (type === 'video' || source.match(/\.(mp4|webm|ogv)($|\?)/i)) {
+
+                        var video = uikitUtil.$(("<video controls playsinline" + (item.poster ? (" poster=\"" + (item.poster) + "\"") : '') + " uk-video=\"" + (this.videoAutoplay) + "\"></video>"));
+                        uikitUtil.attr(video, 'src', source);
+
+                        uikitUtil.once(video, 'error loadedmetadata', function (type) {
+                            if (type === 'error') {
+                                this$1.setError(item);
+                            } else {
+                                uikitUtil.attr(video, {width: video.videoWidth, height: video.videoHeight});
+                                this$1.setItem(item, video);
+                            }
+                        });
+
+                        // Iframe
+                    } else if (type === 'iframe' || source.match(/\.(html|php)($|\?)/i)) {
+
+                        this.setItem(item, ("<iframe class=\"uk-lightbox-iframe\" src=\"" + source + "\" frameborder=\"0\" allowfullscreen></iframe>"));
+
+                        // YouTube
+                    } else if ((matches = source.match(/\/\/.*?youtube(-nocookie)?\.[a-z]+\/watch\?v=([^&\s]+)/) || source.match(/()youtu\.be\/(.*)/))) {
+
+                        var id = matches[2];
+                        var setIframe = function (width, height) {
+                            if ( width === void 0 ) width = 640;
+                            if ( height === void 0 ) height = 450;
+
+                            return this$1.setItem(item, getIframe(("https://www.youtube" + (matches[1] || '') + ".com/embed/" + id), width, height, this$1.videoAutoplay));
+                        };
+
+                        uikitUtil.getImage(("https://img.youtube.com/vi/" + id + "/maxresdefault.jpg")).then(
+                            function (ref) {
+                                var width = ref.width;
+                                var height = ref.height;
+
+                                // YouTube default 404 thumb, fall back to low resolution
+                                if (width === 120 && height === 90) {
+                                    uikitUtil.getImage(("https://img.youtube.com/vi/" + id + "/0.jpg")).then(
+                                        function (ref) {
+                                            var width = ref.width;
+                                            var height = ref.height;
+
+                                            return setIframe(width, height);
+                                    },
+                                        setIframe
+                                    );
+                                } else {
+                                    setIframe(width, height);
+                                }
+                            },
+                            setIframe
+                        );
+
+                        // Vimeo
+                    } else if ((matches = source.match(/(\/\/.*?)vimeo\.[a-z]+\/([0-9]+).*?/))) {
+
+                        uikitUtil.ajax(("https://vimeo.com/api/oembed.json?maxwidth=1920&url=" + (encodeURI(source))), {responseType: 'json', withCredentials: false})
+                            .then(
+                                function (ref) {
+                                    var ref_response = ref.response;
+                                    var height = ref_response.height;
+                                    var width = ref_response.width;
+
+                                    return this$1.setItem(item, getIframe(("https://player.vimeo.com/video/" + (matches[2])), width, height, this$1.videoAutoplay));
+                        },
+                                function () { return this$1.setError(item); }
+                            );
+
+                    }
+
+                }
+
             }
 
-            // Video
-          } else if (type === 'video' || src.match(/\.(mp4|webm|ogv)($|\?)/i)) {
-            const video = createEl('video', {
-              src,
-              poster,
-              controls: '',
-              playsinline: '',
-              'uk-video': "" + this.videoAutoplay,
-              ...attrs });
+        ],
+
+        methods: {
+
+            loadItem: function(index) {
+                if ( index === void 0 ) index = this.index;
 
 
-            uikitUtil.on(video, 'loadedmetadata', () => {
-              uikitUtil.attr(video, { width: video.videoWidth, height: video.videoHeight });
-              this.setItem(item, video);
-            });
-            uikitUtil.on(video, 'error', () => this.setError(item));
+                var item = this.getItem(index);
 
-            // Iframe
-          } else if (type === 'iframe' || src.match(/\.(html|php)($|\?)/i)) {
-            this.setItem(
-            item,
-            createEl('iframe', {
-              src,
-              allowfullscreen: '',
-              class: 'uk-lightbox-iframe',
-              ...attrs }));
+                if (item.content) {
+                    return;
+                }
 
+                uikitUtil.trigger(this.$el, 'itemload', [item]);
+            },
 
+            getItem: function(index) {
+                if ( index === void 0 ) index = this.index;
 
-            // YouTube
-          } else if (
-          matches = src.match(
-          /\/\/(?:.*?youtube(-nocookie)?\..*?[?&]v=|youtu\.be\/)([\w-]{11})[&?]?(.*)?/))
+                return this.items[index] || {};
+            },
 
-          {
-            this.setItem(
-            item,
-            createEl('iframe', {
-              src: "https://www.youtube" + (matches[1] || '') + ".com/embed/" + matches[2] + (
-              matches[3] ? "?" + matches[3] : ''),
+            setItem: function(item, content) {
+                uikitUtil.assign(item, {content: content});
+                var el = uikitUtil.html(this.slides[this.items.indexOf(item)], content);
+                uikitUtil.trigger(this.$el, 'itemloaded', [this, el]);
+                this.$update(el);
+            },
 
-              width: 1920,
-              height: 1080,
-              ...iframeAttrs,
-              ...attrs }));
+            setError: function(item) {
+                this.setItem(item, '<span uk-icon="icon: bolt; ratio: 2"></span>');
+            },
 
+            showControls: function() {
 
+                clearTimeout(this.controlsTimer);
+                this.controlsTimer = setTimeout(this.hideControls, this.delayControls);
 
-            // Vimeo
-          } else if (matches = src.match(/\/\/.*?vimeo\.[a-z]+\/(\d+)[&?]?(.*)?/)) {
-            try {
-              const { height, width } = await (
-              await fetch("https://vimeo.com/api/oembed.json?maxwidth=1920&url=" +
-              encodeURI(
-              src),
+                uikitUtil.addClass(this.$el, 'uk-active', 'uk-transition-active');
 
-              {
-                credentials: 'omit' })).
+            },
 
-
-              json();
-
-              this.setItem(
-              item,
-              createEl('iframe', {
-                src: "https://player.vimeo.com/video/" + matches[1] + (
-                matches[2] ? "?" + matches[2] : ''),
-
-                width,
-                height,
-                ...iframeAttrs,
-                ...attrs }));
-
-
-            } catch (e) {
-              this.setError(item);
+            hideControls: function() {
+                uikitUtil.removeClass(this.$el, 'uk-active', 'uk-transition-active');
             }
-          }
-        } }],
 
+        }
 
+    };
 
-      methods: {
-        loadItem(index) {if (index === void 0) {index = this.index;}
-          const item = this.getItem(index);
-
-          if (!this.getSlide(item).childElementCount) {
-            uikitUtil.trigger(this.$el, 'itemload', [item]);
-          }
-        },
-
-        getItem(index) {if (index === void 0) {index = this.index;}
-          return this.items[uikitUtil.getIndex(index, this.slides)];
-        },
-
-        setItem(item, content) {
-          uikitUtil.trigger(this.$el, 'itemloaded', [this, uikitUtil.html(this.getSlide(item), content)]);
-        },
-
-        getSlide(item) {
-          return this.slides[this.items.indexOf(item)];
-        },
-
-        setError(item) {
-          this.setItem(item, '<span uk-icon="icon: bolt; ratio: 2"></span>');
-        },
-
-        showControls() {
-          clearTimeout(this.controlsTimer);
-          this.controlsTimer = setTimeout(this.hideControls, this.delayControls);
-
-          uikitUtil.addClass(this.$el, 'uk-active', 'uk-transition-active');
-        },
-
-        hideControls() {
-          uikitUtil.removeClass(this.$el, 'uk-active', 'uk-transition-active');
-        } } };
-
-
-
-    function createEl(tag, attrs) {
-      const el = uikitUtil.fragment("<" + tag + ">");
-      uikitUtil.attr(el, attrs);
-      return el;
+    function getIframe(src, width, height, autoplay) {
+        return ("<iframe src=\"" + src + "\" width=\"" + width + "\" height=\"" + height + "\" style=\"max-width: 100%; box-sizing: border-box;\" frameborder=\"0\" allowfullscreen uk-video=\"autoplay: " + autoplay + "\" uk-responsive></iframe>");
     }
 
+    /* global UIkit, 'lightboxPanel' */
+
     if (typeof window !== 'undefined' && window.UIkit) {
-      window.UIkit.component('lightboxPanel', Component);
+        window.UIkit.component('lightboxPanel', Component);
     }
 
     return Component;
