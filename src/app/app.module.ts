@@ -18,6 +18,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { LoadingComponent } from './components/shared/loading/loading.component';
 import { DataService } from './services/data.service';
 import { AuthService } from './services/auth.services';
+import { ProfilePageComponent } from './pages/account/profile-page/profile-page.component';
+import { CheckoutPageComponent } from './pages/store/checkout-page/checkout-page.component';
 
 
 @NgModule({
@@ -32,7 +34,9 @@ import { AuthService } from './services/auth.services';
     CartPageComponent,
     FramePageComponent,
     ProductCardComponent,
-    LoadingComponent
+    LoadingComponent,
+    ProfilePageComponent,
+    CheckoutPageComponent
 
   ],
   imports: [
